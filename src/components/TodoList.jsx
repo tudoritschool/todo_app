@@ -1,5 +1,5 @@
 // Library import
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Components import
 import SearchComponent from "./SearchComponent";
@@ -7,14 +7,41 @@ import TodoItem from "./TodoItem";
 import AddTodo from "./AddTodo";
 
 function TodoList() {
-	const [todoList, setTodoList] = useState([
-		{ name: "Do yoga", completed: false },
-		{ name: "50 push-ups", completed: false },
-		{ name: "Order pizza", completed: false },
-	]);
+	const [initialTodos, setInitialTodos] = useState(null);
 
+	// ALL STATES::
+	const [todoList, setTodoList] = useState(initialTodos);
+
+	const [searchText, setSearchText] = useState("");
+
+	// EFFECTS
+	// useEffect(()=>{}, [])
+	useEffect(() => {
+		console.log(searchText);
+
+		if (initialTodos) {
+			const newFilteredList = initialTodos.filter((todo) => {
+				return todo.title
+					.toLocaleLowerCase()
+					.includes(searchText.toLowerCase());
+			});
+			setTodoList(newFilteredList);
+		}
+	}, [searchText]);
+
+	useEffect(() => {
+		fetch("https://jsonplaceholder.typicode.com/todos")
+			.then((res) => res.json())
+			.then((todoListFetch) => {
+				console.log(todoListFetch);
+				setInitialTodos(todoListFetch);
+				setTodoList(todoListFetch);
+			});
+	}, []);
+
+	// EVENTS::
 	const handleAddTodo = (todoName) => {
-		const newTodo = { name: todoName, completed: false };
+		const newTodo = { tile: todoName, completed: false };
 		setTodoList([...todoList, newTodo]);
 	};
 
@@ -24,22 +51,40 @@ function TodoList() {
 		// Se cauta todo-ul si se schimba completed => true
 		// se foloseste map pentru a crea un array nou
 		// setTodoList(newTodoList)
+
+		const newTodoList = todoList.map((todo, index) => {
+			if (index !== indexTodo) {
+				return todo;
+			}
+			return { ...todo, completed: true };
+		});
+		console.log(newTodoList);
+		setTodoList(newTodoList);
 	};
 
 	return (
 		<>
 			<h1>Todo List</h1>
-			<SearchComponent />
-			{todoList.map((todo, index) => (
-				<TodoItem
-					name={todo.name}
-					completed={todo.completed}
-					key={"todo_" + index}
-					onComplete={handleCompleteTodo}
-					index={index}
-				/>
-			))}
-			<AddTodo onAddTodo={handleAddTodo} />
+			{todoList === null || initialTodos === null ? (
+				<h2>Loading...</h2>
+			) : (
+				<>
+					<SearchComponent
+						searchText={searchText}
+						setSearchText={setSearchText}
+					/>
+					{todoList.map((todo, index) => (
+						<TodoItem
+							name={todo.title}
+							completed={todo.completed}
+							key={"todo_" + index}
+							onComplete={handleCompleteTodo}
+							index={index}
+						/>
+					))}
+					<AddTodo onAddTodo={handleAddTodo} />
+				</>
+			)}
 		</>
 	);
 }
